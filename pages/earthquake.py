@@ -12,10 +12,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.title("🌎 교육용 지진 탐사 데이터 시각화")
+st.title("🌎 지진 탐사 데이터 시각화 🌎")
 st.markdown("""
-학생들이 전 세계 지진 데이터를 실시간으로 분석하며 **판 구조론(Plate Tectonics)**과 
-**지진의 특성(규모, 깊이)**을 자기주도적으로 학습할 수 있는 공간입니다.
+전 세계 지진 데이터를 실시간으로 분석하며 판 구조론(Plate Tectonics)과 
+지진의 특성(규모, 깊이)을 자기주도적으로 학습해 봅시다.
 """)
 
 # 2. 사이드바 - 교육용 필터 설정
@@ -137,3 +137,52 @@ if not df.empty:
     """)
 else:
     st.warning("선택한 조건에 부합하는 지진 데이터가 없습니다. 필터를 조정해보세요.")
+
+st.markdown("---")
+st.subheader("📝 조별 탐사 결과 메모장")
+st.markdown("💡 지도를 보고 토론한 결과를 닉네임과 함께 기록해 보세요! (※ 브라우저를 새로고침하면 초기화됩니다.)")
+
+# 1. 메모를 저장할 세션 상태(st.session_state) 초기화
+if "memo_storage" not in st.session_state:
+    st.session_state["memo_storage"] = []
+
+# 2. 메모 입력 폼 (학생용 UI)
+with st.form(key="local_memo_form", clear_on_submit=True):
+    col_nick, col_key = st.columns([1, 2])
+    with col_nick:
+        nickname = st.text_input("👤 닉네임 (또는 모둠명)", placeholder="예: 1조, 지구탐험가")
+    with col_key:
+        keyword = st.text_input("🔑 핵심 키워드", placeholder="예: 불의 고리, 천발지진")
+        
+    opinion = st.text_area("🧠 의견 및 생각 정리", placeholder="지도를 보고 발견한 판의 경계 특징이나 토론 결과를 적어주세요.")
+    
+    submit_btn = st.form_submit_button(label="🚀 메모 등록하기")
+
+# 3. 등록 버튼 클릭 시 세션에 저장하는 로직
+if submit_btn:
+    if not nickname.strip() or not opinion.strip():
+        st.warning("⚠️ 닉네임과 의견은 필수 입력 사항입니다.")
+    else:
+        # 새 메모 데이터 객체 생성
+        new_memo = {
+            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "nickname": nickname,
+            "keyword": keyword if keyword.strip() else "없음",
+            "opinion": opinion
+        }
+        # 세션 리스트의 가장 앞에 추가 (최신 글이 위로 오도록)
+        st.session_state["memo_storage"].insert(0, new_memo)
+        st.success(f"🎉 {nickname}님의 의견이 등록되었습니다!")
+        st.rerun() # 화면 즉시 갱신
+
+# 4. 등록된 메모들을 화면에 보여주는 피드 영역
+st.markdown("### 💬 우리 반 실시간 피드")
+
+if st.session_state["memo_storage"]:
+    for memo in st.session_state["memo_storage"]:
+        # 메신저 타임라인 형태로 깔끔하게 시각화
+        with st.chat_message("user"):
+            st.markdown(f"**{memo['nickname']}** | ⏱️ {memo['timestamp']} | 🏷️ *{memo['keyword']}*")
+            st.write(memo['opinion'])
+else:
+    st.caption("아직 등록된 메모가 없습니다. 첫 번째 의견을 남겨보세요!")
